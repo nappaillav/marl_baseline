@@ -1,0 +1,41 @@
+# HPN-SALEQ-SEM-QMIX (Phase-2 thread B): hpn_saleq_qmix with deterministic SEM replacing AvgL1Norm at phi^{oa}.
+# Single-variable diff vs. hpn_saleq_qmix.yaml: saleq_norm + saleq_sem_groups + name ONLY.
+action_selector: "epsilon_greedy"
+epsilon_start: 1.0
+epsilon_finish: 0.05
+epsilon_anneal_time: 100000
+
+runner: "parallel"
+batch_size_run: 8
+buffer_size: 5000
+batch_size: 128
+t_max: 1050000            # validation budget; reference reaches ~1.0 win by ~430k
+
+target_update_interval: 200
+
+mac: "hpn_mac"
+agent: "hpn_saleq"
+agent_output_type: q
+hpn_hyper_dim: 64
+hpn_hyper_activation: "relu"
+hpn_head_num: 1
+saleq_emb_dim: 32        # Enc / e_hat(a) attacked-enemy embedding dim
+saleq_zsa_dim: 64        # phi^{oa} embedding dim
+saleq_hidden_dim: 64     # head MLP hidden dim
+saleq_norm: "sem"        # <-- thread B: deterministic SEM(LN(x)) replaces AvgL1Norm at the phi^{oa} site
+saleq_sem_groups: 8      # 8 groups x 8 vertices over zsa_dim=64 (constraint: saleq_sem_groups | saleq_zsa_dim)
+
+learner: "nq_learner"
+mixer: "qmix"            # nq_learner maps this string to nmix.Mixer(args) -> abs=True (monotonic)
+mixing_embed_dim: 32
+hypernet_embed: 64
+
+lr: 0.001
+optimizer: "adam"         # REQUIRED: nq_learner.py reads args.optimizer directly and default.yaml has no such key
+td_lambda: 0.6
+q_lambda: False           # nq_learner asserts this is False
+
+obs_agent_id: True
+obs_last_action: False
+
+name: "hpn_saleq_sem_qmix"

@@ -1,0 +1,39 @@
+# HPN-SALEQ-QMIX (value-based adaptation): HPN trunk + unified action-in phi^{oa} Q-head + monotonic nmix.
+# Single-variable diff vs. hpn_qmix.yaml: the agent block ONLY (agent + saleq_* head dims + name).
+action_selector: "epsilon_greedy"
+epsilon_start: 1.0
+epsilon_finish: 0.05
+epsilon_anneal_time: 100000
+
+runner: "parallel"
+batch_size_run: 8
+buffer_size: 5000
+batch_size: 128
+t_max: 1050000            # validation budget; reference reaches ~1.0 win by ~430k
+
+target_update_interval: 200
+
+mac: "hpn_mac"
+agent: "hpn_saleq"       # <-- the only functional change vs. hpn_qmix: action-in phi^{oa} Q-head
+agent_output_type: q
+hpn_hyper_dim: 64
+hpn_hyper_activation: "relu"
+hpn_head_num: 1
+saleq_emb_dim: 32        # Enc / e_hat(a) attacked-enemy embedding dim
+saleq_zsa_dim: 64        # phi^{oa} embedding dim
+saleq_hidden_dim: 64     # head MLP hidden dim
+
+learner: "nq_learner"
+mixer: "qmix"            # nq_learner maps this string to nmix.Mixer(args) -> abs=True (monotonic)
+mixing_embed_dim: 32
+hypernet_embed: 64
+
+lr: 0.001
+optimizer: "adam"         # REQUIRED: nq_learner.py reads args.optimizer directly and default.yaml has no such key
+td_lambda: 0.6
+q_lambda: False           # nq_learner asserts this is False
+
+obs_agent_id: True
+obs_last_action: False
+
+name: "hpn_saleq_qmix"

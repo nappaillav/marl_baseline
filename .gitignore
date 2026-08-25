@@ -1,0 +1,10 @@
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Experiment outputs: each machine produces its own. No trailing slash, so a
+# symlinked results/ is ignored too.
+results
+
+# In-place edit backups; git is the backup now.
+*.bak-*
