@@ -1,0 +1,68 @@
+# =====================================================================================================
+# DESIGN-SPACE STUDY -- variant A1 : imagination horizon wm_k = 2 (full method: 5)
+#
+# Single-variable diff vs hpn_saleq_sem_wm_qmix.yaml : `wm_k: 5` -> `wm_k: 2`; `name`.
+# Deploys           : agent = hpn_saleq, mac = hpn_mac, learner = saleq_wm_learner (all unchanged, original files).
+# Hypothesis        : the mixer benefits from a shorter imagined future; k=1 is a single prior step (near 'posterior only'), k=10 tests whether longer open-loop rollouts (drift grows with h) still help.
+# Race scope        : protoss + zerg ONLY (the deployed agent asserts on terran_gen).
+# Budget / metric   : t_max=4005000 (command-line override; the t_max below is the source's),
+#                     scored on mean test win rate over 3.9M-4.0M steps; reference row = the full
+#                     method's lab-machine results (no Nibi re-run).
+# Ablation coverage : ablation_arm_4 (no world model) is only the FLOOR of this axis, not a value on it.
+# Diagnostics       : kl_drift_h1..h2 are logged (one per rollout step).
+# =====================================================================================================
+action_selector: "epsilon_greedy"
+epsilon_start: 1.0
+epsilon_finish: 0.05
+epsilon_anneal_time: 100000
+
+runner: "parallel"
+batch_size_run: 8
+buffer_size: 5000
+batch_size: 128
+t_max: 1050000            # validation budget; reference reaches ~1.0 win by ~430k
+
+target_update_interval: 200
+
+mac: "hpn_mac"
+agent: "hpn_saleq"
+agent_output_type: q
+hpn_hyper_dim: 64
+hpn_hyper_activation: "relu"
+hpn_head_num: 1
+saleq_emb_dim: 32
+saleq_zsa_dim: 64
+saleq_hidden_dim: 64
+saleq_norm: "sem"        # SEM base (adopted after G3.1)
+saleq_sem_groups: 8
+
+learner: "saleq_wm_learner"   # <-- thread C: centralized, mixer-side SEM world model
+# world-model block (phase2-plan_v2 W9/W10/W13)
+wm_groups: 8             # L_w categorical groups
+wm_vertices: 8           # V vertices per group -> d_wm = 64
+wm_state_dim: 64         # d_s (z^s, 8-group SEM_det)
+wm_sa_dim: 64            # d_sa (phi^{sa})
+wm_traj_dim: 32          # aggregated imagination -> mixer state augmentation
+wm_k: 2   # imagination depth. DESIGN-SPACE A1 value; the full method uses 5 (won the W6 sweep on 5m_vs_6m; k=3 was the sweep alternative)
+wm_k_train: 1            # one-step prior training (W13; >1 is the W12 escalation)
+wm_alpha: 0.8            # KL balance (prior-training weight)
+wm_unimix: 0.01          # unimix ratio
+c_wm: 1.0               # world-model objective weight
+c_kl: 1.0
+c_rec: 1.0
+c_pred: 1.0
+c_act: 1.0
+
+mixer: "qmix"            # nq_learner maps this to nmix.Mixer(args) -> abs=True; the WM learner rebuilds it augmented
+mixing_embed_dim: 32
+hypernet_embed: 64
+
+lr: 0.001
+optimizer: "adam"
+td_lambda: 0.6
+q_lambda: False
+
+obs_agent_id: True
+obs_last_action: False
+
+name: "design_a1_wmk_2"

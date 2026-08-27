@@ -1,0 +1,81 @@
+# =====================================================================================================
+# TERRAN VARIANT of ablation_arm_6 for SMACv2 10gen_terran (map_type == "terran_gen"), 3 seeds, GPU jobs
+# (cc_smacv2_ablation_terran.sh -> cc_smacv2_gpu.sh).  Run as:  --config=terran_ablations/ablation_arm_6
+# Copied from ablation_arm_6.yaml on 2026-08-26; the original header below describes the arm itself.
+# Changes vs the source: `agent: hpn_saleq` -> `agent: hpn_saleq_terran` (healer-aware head, required on terran_gen) and name.
+#   The learner / norm / WM settings of the arm are unchanged.
+# name: "ablation_arm_6_terran" (tb/sacred/model dirs are self-identifying; the map is also in unique_token).
+# =====================================================================================================
+# =====================================================================================================
+# ABLATION ARM 6 (plan id 6a) -- "KL balancing off (wm_alpha = 0)".
+#
+# Component ablated : the DreamerV2/V3-style KL balancing in the world-model objective,
+#                       L_KL = wm_alpha * KL( sg(q_t) || p_t ) + (1 - wm_alpha) * KL( q_t || sg(p_t) )
+#                     (saleq_wm_learner.py:123-124), full method wm_alpha = 0.8 (prior-training weight).
+#                     With wm_alpha = 0.0 only the second term remains: the KL gradient reaches ONLY the
+#                     posterior q_t (pulled toward the prior); the prior p_t receives NO KL gradient and is
+#                     trained only through L_pred / L_act and the TD path via imagination.
+# Single-variable diff vs hpn_saleq_sem_wm_qmix.yaml : `wm_alpha: 0.8` -> `wm_alpha: 0.0`; `name`.
+# Deploys           : agent = hpn_saleq, mac = hpn_mac, learner = saleq_wm_learner (all untouched files).
+# Hypothesis        : prior-heavy balancing is load-bearing for a usable imagination model. Expected failure
+#                     mode is POSTERIOR COLLAPSE: watch loss_kl -> ~0 while loss_rec stays flat (posterior
+#                     ignores the state), kl_drift_h1..h5 (open-loop imagination fidelity) and loss_act
+#                     stalling near n_agents * ln|A| (~12 on 5v5) if the prior ignores actions.
+# Race scope        : protoss + zerg ONLY. On 10gen_terran hpn_saleq fails loudly at the terran_gen assert
+#                     (the existing hpn_saleq_terran_sem_wm_qmix + `wm_alpha=0.0` would be the terran twin).
+# =====================================================================================================
+action_selector: "epsilon_greedy"
+epsilon_start: 1.0
+epsilon_finish: 0.05
+epsilon_anneal_time: 100000
+
+runner: "parallel"
+batch_size_run: 8
+buffer_size: 5000
+batch_size: 128
+t_max: 1050000            # validation budget; reference reaches ~1.0 win by ~430k
+
+target_update_interval: 200
+
+mac: "hpn_mac"
+agent: "hpn_saleq_terran"
+agent_output_type: q
+hpn_hyper_dim: 64
+hpn_hyper_activation: "relu"
+hpn_head_num: 1
+saleq_emb_dim: 32
+saleq_zsa_dim: 64
+saleq_hidden_dim: 64
+saleq_norm: "sem"        # SEM base (adopted after G3.1)
+saleq_sem_groups: 8
+
+learner: "saleq_wm_learner"   # thread C: centralized, mixer-side SEM world model (unchanged)
+# world-model block (phase2-plan_v2 W9/W10/W13)
+wm_groups: 8             # L_w categorical groups
+wm_vertices: 8           # V vertices per group -> d_wm = 64
+wm_state_dim: 64         # d_s (z^s, 8-group SEM_det)
+wm_sa_dim: 64            # d_sa (phi^{sa})
+wm_traj_dim: 32          # aggregated imagination -> mixer state augmentation
+wm_k: 5                  # imagination depth (the method's value)
+wm_k_train: 1            # one-step prior training (W13)
+wm_alpha: 0.0            # <-- ABLATION: KL balancing off (posterior-only KL gradient); was 0.8
+wm_unimix: 0.01          # unimix ratio
+c_wm: 1.0               # world-model objective weight
+c_kl: 1.0
+c_rec: 1.0
+c_pred: 1.0
+c_act: 1.0
+
+mixer: "qmix"            # nq_learner maps this to nmix.Mixer(args) -> abs=True; the WM learner rebuilds it augmented
+mixing_embed_dim: 32
+hypernet_embed: 64
+
+lr: 0.001
+optimizer: "adam"
+td_lambda: 0.6
+q_lambda: False
+
+obs_agent_id: True
+obs_last_action: False
+
+name: "ablation_arm_6_terran"

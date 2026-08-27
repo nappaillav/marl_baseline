@@ -1,0 +1,82 @@
+# =====================================================================================================
+# TERRAN TWIN of design_b2_groups_4 for SMACv2 10gen_terran (map_type == "terran_gen"), 3 seeds, GPU jobs.
+# Run as:  --config=terran_design_space/terran_design_b2_groups_4 --env-config=sc2_v2_terran   (t_max=4005000 on the command line)
+# Copied from design_space/design_b2_groups_4.yaml on 2026-08-27; the original header below describes the variant itself.
+# Changes vs the source: `agent: hpn_saleq` -> `agent: hpn_saleq_terran` (healer-aware head, required on terran_gen)
+#   and `name`. The variant's changed key is honoured unchanged on the terran path (it lives in the WM / learner /
+#   parent __init__, not in the terran agent's own code). NOTE: B1 and B3 have NO terran twin -- hpn_saleq_terran
+#   hard-codes a two-way sem/AvgL1Norm branch and never reads saleq_sem_temp, so config-only twins of those would
+#   silently duplicate ablation_arm_3 / the full terran method.
+# name: "terran_design_b2_groups_4" (tb/sacred/model dirs are self-identifying; the map is also in unique_token).
+# =====================================================================================================
+# =====================================================================================================
+# DESIGN-SPACE STUDY -- variant B2 : head SEM granularity saleq_sem_groups = 4 over zsa_dim 64 (full method: 8x8)
+#
+# Single-variable diff vs hpn_saleq_sem_wm_qmix.yaml : `saleq_sem_groups: 8` -> `saleq_sem_groups: 4`; `name`.
+# Deploys           : agent = hpn_saleq, mac = hpn_mac, learner = saleq_wm_learner (all unchanged, original files).
+# Hypothesis        : 4 groups x 16 vertices: few large simplices (coarse partition, high per-group capacity)
+# Race scope        : TERRAN TWIN -> 10gen_terran only (agent hpn_saleq_terran); the protoss/zerg original is design_space/design_b2_groups_4.yaml.
+# Budget / metric   : t_max=4005000 (command-line override; the t_max below is the source's),
+#                     scored on mean test win rate over 3.9M-4.0M steps; reference row = the full
+#                     method's lab-machine results (no Nibi re-run).
+# Ablation coverage : none.
+# Constraint        : saleq_sem_groups must divide saleq_zsa_dim=64 (64 itself is degenerate: softmax of a scalar = 1).
+# =====================================================================================================
+action_selector: "epsilon_greedy"
+epsilon_start: 1.0
+epsilon_finish: 0.05
+epsilon_anneal_time: 100000
+
+runner: "parallel"
+batch_size_run: 8
+buffer_size: 5000
+batch_size: 128
+t_max: 1050000            # validation budget; reference reaches ~1.0 win by ~430k
+
+target_update_interval: 200
+
+mac: "hpn_mac"
+agent: "hpn_saleq_terran"   # TERRAN TWIN (full method on protoss/zerg: hpn_saleq)
+agent_output_type: q
+hpn_hyper_dim: 64
+hpn_hyper_activation: "relu"
+hpn_head_num: 1
+saleq_emb_dim: 32
+saleq_zsa_dim: 64
+saleq_hidden_dim: 64
+saleq_norm: "sem"        # SEM base (adopted after G3.1)
+saleq_sem_groups: 4
+
+learner: "saleq_wm_learner"   # <-- thread C: centralized, mixer-side SEM world model
+# world-model block (phase2-plan_v2 W9/W10/W13)
+wm_groups: 8             # L_w categorical groups
+wm_vertices: 8           # V vertices per group -> d_wm = 64
+wm_state_dim: 64         # d_s (z^s, 8-group SEM_det)
+wm_sa_dim: 64            # d_sa (phi^{sa})
+wm_traj_dim: 32          # aggregated imagination -> mixer state augmentation
+wm_k: 5                  # imagination depth. 5 IS the method: it won the W6 sweep on 5m_vs_6m
+                         # (t-to-0.25 363k/343k and final 0.915/0.960, vs k=3's 464k/343k and
+                         # 0.883/0.934) and is what every validated C.1/C.2 run used. k=3 remains
+                         # the sweep alternative -- override with `wm_k=3` to reproduce that arm.
+wm_k_train: 1            # one-step prior training (W13; >1 is the W12 escalation)
+wm_alpha: 0.8            # KL balance (prior-training weight)
+wm_unimix: 0.01          # unimix ratio
+c_wm: 1.0               # world-model objective weight
+c_kl: 1.0
+c_rec: 1.0
+c_pred: 1.0
+c_act: 1.0
+
+mixer: "qmix"            # nq_learner maps this to nmix.Mixer(args) -> abs=True; the WM learner rebuilds it augmented
+mixing_embed_dim: 32
+hypernet_embed: 64
+
+lr: 0.001
+optimizer: "adam"
+td_lambda: 0.6
+q_lambda: False
+
+obs_agent_id: True
+obs_last_action: False
+
+name: "terran_design_b2_groups_4"

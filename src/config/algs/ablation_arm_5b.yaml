@@ -1,0 +1,76 @@
+# =====================================================================================================
+# ABLATION ARM 5b (plan id 5d-i) -- "no global state into the mixer at all (nonlinear-VDN control)".
+#
+# Component ablated : every mixer-side state input. The QMIX mixer hypernetworks receive a CONSTANT
+#                     ones[bs, T, 1] instead of aug_state = [s_t ; traj_t], so all mixing weights/biases become
+#                     learned constants: state-INdependent but still non-negative (abs) -> monotone mixing.
+#                     This is a nonlinear VDN with learned per-agent weights. The imagination rollout has no
+#                     consumer and is skipped; the WM auxiliary losses (L_kl/L_rec/L_pred/L_act) are still
+#                     trained on the full s_t so the WM diagnostics stay comparable across arms. The agent,
+#                     head and TD(lambda) are unchanged.
+# Single-variable diff vs hpn_saleq_sem_wm_qmix.yaml : `learner: saleq_wm_learner` ->
+#                     `learner: ablation_mixstate_learner` + new key `mixer_state: "none"`; `name`.
+# Deploys           : agent = hpn_saleq, mac = hpn_mac,
+#                     learner = ablation_mixstate_learner (src/learners/ablation_mixstate_learner.py, copy of
+#                     saleq_wm_learner.py; mixers built with input dim 1).
+# Hypothesis        : conditioning the mixer on global information (raw state and/or imagined trajectory)
+#                     is load-bearing; this arm anchors the scale for arm 5a and the full method.
+# Race scope        : protoss + zerg ONLY. On 10gen_terran hpn_saleq fails loudly at the terran_gen assert
+#                     (a terran twin would only need `agent: hpn_saleq_terran`; not created for this study).
+# =====================================================================================================
+action_selector: "epsilon_greedy"
+epsilon_start: 1.0
+epsilon_finish: 0.05
+epsilon_anneal_time: 100000
+
+runner: "parallel"
+batch_size_run: 8
+buffer_size: 5000
+batch_size: 128
+t_max: 1050000            # validation budget; reference reaches ~1.0 win by ~430k
+
+target_update_interval: 200
+
+mac: "hpn_mac"
+agent: "hpn_saleq"
+agent_output_type: q
+hpn_hyper_dim: 64
+hpn_hyper_activation: "relu"
+hpn_head_num: 1
+saleq_emb_dim: 32
+saleq_zsa_dim: 64
+saleq_hidden_dim: 64
+saleq_norm: "sem"        # SEM base (adopted after G3.1)
+saleq_sem_groups: 8
+
+learner: "ablation_mixstate_learner"   # <-- ABLATION: copy of saleq_wm_learner with the mixer input ablated
+mixer_state: "none"                    # <-- ABLATION: mixer reads a constant (no s_t, no traj_t)
+# world-model block (phase2-plan_v2 W9/W10/W13) -- unchanged (aux losses still trained; rollout skipped)
+wm_groups: 8             # L_w categorical groups
+wm_vertices: 8           # V vertices per group -> d_wm = 64
+wm_state_dim: 64         # d_s (z^s, 8-group SEM_det)
+wm_sa_dim: 64            # d_sa (phi^{sa})
+wm_traj_dim: 32          # inert in this arm (no traj is produced)
+wm_k: 5                  # used only by the kl_drift_h* diagnostic in this arm (no imagination rollout)
+wm_k_train: 1            # one-step prior training (W13)
+wm_alpha: 0.8            # KL balance (prior-training weight)
+wm_unimix: 0.01          # unimix ratio
+c_wm: 1.0               # world-model objective weight
+c_kl: 1.0
+c_rec: 1.0
+c_pred: 1.0
+c_act: 1.0
+
+mixer: "qmix"            # nmix.Mixer(args) -> abs=True; the ablation learner rebuilds it with input dim 1
+mixing_embed_dim: 32
+hypernet_embed: 64
+
+lr: 0.001
+optimizer: "adam"
+td_lambda: 0.6
+q_lambda: False
+
+obs_agent_id: True
+obs_last_action: False
+
+name: "ablation_arm_5b"

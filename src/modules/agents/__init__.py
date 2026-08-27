@@ -23,3 +23,9 @@ REGISTRY["asn_rnn"] = AsnRNNAgent
 REGISTRY["gnn_rnn"] = GnnRNNAgent
 REGISTRY["hpn_saleq"] = HPNSaleQAgent
 REGISTRY["hpn_saleq_terran"] = HPNSaleQTerranAgent
+
+from .flat_saleq_agent import FlatSaleQAgent  # ABLATION arm 1B: flat (non-HPN) trunk + action-in head
+REGISTRY["flat_saleq"] = FlatSaleQAgent
+
+from .design_saleq_agent import DesignSaleQAgent  # DESIGN-SPACE study: head norm {ln,none,sem_noln} + SEM temperature
+REGISTRY["design_saleq"] = DesignSaleQAgent

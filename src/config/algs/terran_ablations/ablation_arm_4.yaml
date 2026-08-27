@@ -1,0 +1,63 @@
+# =====================================================================================================
+# TERRAN VARIANT of ablation_arm_4 for SMACv2 10gen_terran (map_type == "terran_gen"), 3 seeds, GPU jobs
+# (cc_smacv2_ablation_terran.sh -> cc_smacv2_gpu.sh).  Run as:  --config=terran_ablations/ablation_arm_4
+# Copied from ablation_arm_4.yaml on 2026-08-26; the original header below describes the arm itself.
+# Changes vs the source: `agent: hpn_saleq` -> `agent: hpn_saleq_terran` (healer-aware head, required on terran_gen) and name.
+#   The learner / norm / WM settings of the arm are unchanged.
+# name: "ablation_arm_4_terran" (tb/sacred/model dirs are self-identifying; the map is also in unique_token).
+# =====================================================================================================
+# =====================================================================================================
+# ABLATION ARM 4 (plan id 4a) -- "no world model".
+#
+# Component ablated : the entire centralized SEM world model (SemWorldModel + SaleqWMLearner): no auxiliary
+#                     losses (L_kl/L_rec/L_pred/L_act), no imagination rollout, no traj augmentation of the
+#                     mixer state, no TD gradient into a WM. The QMIX mixer reads the raw global state s_t
+#                     through pymarl3's own nq_learner. HPN trunk + action-in head with SEM are unchanged.
+# Single-variable diff vs hpn_saleq_sem_wm_qmix.yaml : `learner: saleq_wm_learner` -> `learner: nq_learner`;
+#                     the whole wm_* / c_* block removed (unused by nq_learner); `name`.
+# This file is IDENTICAL to hpn_saleq_sem_qmix.yaml except for `name` (and this comment block); it exists
+#                     under the ablation_arm_* naming so the study's runs are unambiguous in results/.
+# Deploys           : agent = hpn_saleq, mac = hpn_mac, learner = nq_learner, mixer = nmix (all untouched).
+# Hypothesis        : the world model is load-bearing; this is the floor for arms 5a/5b/6.
+# Race scope        : protoss + zerg ONLY. On 10gen_terran hpn_saleq fails loudly at the terran_gen assert
+#                     (a terran twin would only need `agent: hpn_saleq_terran`; not created for this study).
+# =====================================================================================================
+action_selector: "epsilon_greedy"
+epsilon_start: 1.0
+epsilon_finish: 0.05
+epsilon_anneal_time: 100000
+
+runner: "parallel"
+batch_size_run: 8
+buffer_size: 5000
+batch_size: 128
+t_max: 1050000            # validation budget; reference reaches ~1.0 win by ~430k
+
+target_update_interval: 200
+
+mac: "hpn_mac"
+agent: "hpn_saleq_terran"
+agent_output_type: q
+hpn_hyper_dim: 64
+hpn_hyper_activation: "relu"
+hpn_head_num: 1
+saleq_emb_dim: 32        # Enc / e_hat(a) attacked-enemy embedding dim
+saleq_zsa_dim: 64        # phi^{oa} embedding dim
+saleq_hidden_dim: 64     # head MLP hidden dim
+saleq_norm: "sem"        # deterministic SEM(LN(x)) at the phi^{oa} site (unchanged)
+saleq_sem_groups: 8      # 8 groups x 8 vertices over zsa_dim=64
+
+learner: "nq_learner"    # <-- ABLATION: no world model; was "saleq_wm_learner" (wm_* / c_* block removed)
+mixer: "qmix"            # nq_learner maps this string to nmix.Mixer(args) -> abs=True (monotonic), raw state
+mixing_embed_dim: 32
+hypernet_embed: 64
+
+lr: 0.001
+optimizer: "adam"         # REQUIRED: nq_learner.py reads args.optimizer directly and default.yaml has no such key
+td_lambda: 0.6
+q_lambda: False           # nq_learner asserts this is False
+
+obs_agent_id: True
+obs_last_action: False
+
+name: "ablation_arm_4_terran"

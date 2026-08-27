@@ -1,0 +1,81 @@
+# =====================================================================================================
+# TERRAN VARIANT of ablation_arm_2 for SMACv2 10gen_terran (map_type == "terran_gen"), 3 seeds, GPU jobs
+# (cc_smacv2_ablation_terran.sh -> cc_smacv2_gpu.sh).  Run as:  --config=terran_ablations/ablation_arm_2
+# Copied from ablation_arm_2.yaml on 2026-08-26; the original header below describes the arm itself.
+# Changes vs the source: name only. Agent stays `hpns_rnn` (vanilla HPN read-out): it has no terran_gen assert, so it RUNS on
+#   terran, but like every pymarl3 HPN agent it scores medivac heal slots through the enemy read-out
+#   (INTEGRATION.md section 3). Accepted for this arm; interpret terran results with that caveat.
+# name: "ablation_arm_2_terran" (tb/sacred/model dirs are self-identifying; the map is also in unique_token).
+# =====================================================================================================
+# =====================================================================================================
+# ABLATION ARM 2 (plan id 2a) -- "vanilla HPN read-out, no action-in Q-head".
+#
+# Component ablated : the unified action-in Q-head phi^{oa}(a) (Enc attacked-enemy embedding e_hat(a),
+#                     slot-free a_tilde(a), phi MLP, SEM/AvgL1Norm normalization, scalar head evaluated by
+#                     enumeration over |A|). Replaced by the ORIGINAL pymarl3 HPN read-out (hpns_rnn:
+#                     fc2_normal_actions for normal actions + the module-D hypernet slice of hyper_enemy for
+#                     attack actions). The HPN trunk and the SEM world-model learner are unchanged.
+#                     NOTE: SEM site #1 (the phi^{oa} normalization) disappears together with the head --
+#                     the vanilla read-out has no such site. Compare against ablation_arm_3 (SALEQ head with
+#                     AvgL1Norm) to separate the head effect from the SEM-at-head effect.
+# Single-variable diff vs hpn_saleq_sem_wm_qmix.yaml : `agent: hpn_saleq` -> `agent: hpns_rnn`; all
+#                     `saleq_*` keys removed (unused by hpns_rnn); `name`.
+# Deploys           : agent = hpns_rnn (pymarl3's own src/modules/agents/hpns_rnn_agent.py, untouched),
+#                     mac = hpn_mac, learner = saleq_wm_learner (head-agnostic: it only calls mac.forward).
+# Hypothesis        : the action-in enumeration head (entity-conditioned, weight-shared Q over actions) is
+#                     load-bearing beyond what the WM alone provides.
+# Race scope        : protoss + zerg ONLY. On 10gen_terran hpns_rnn RUNS WITHOUT ERROR but is silently
+#                     wrong: it branches only on map_type == "MMM", so medivac heal slots are scored through
+#                     the enemy read-out (INTEGRATION.md section 3). Do not run this arm on terran.
+# =====================================================================================================
+action_selector: "epsilon_greedy"
+epsilon_start: 1.0
+epsilon_finish: 0.05
+epsilon_anneal_time: 100000
+
+runner: "parallel"
+batch_size_run: 8
+buffer_size: 5000
+batch_size: 128
+t_max: 1050000            # validation budget; reference reaches ~1.0 win by ~430k
+
+target_update_interval: 200
+
+mac: "hpn_mac"
+agent: "hpns_rnn"         # <-- ABLATION: vanilla HPN read-out (modules C/D); was "hpn_saleq"
+agent_output_type: q
+hpn_hyper_dim: 64
+hpn_hyper_activation: "relu"
+hpn_head_num: 1
+# saleq_emb_dim / saleq_zsa_dim / saleq_hidden_dim / saleq_norm / saleq_sem_groups: REMOVED (no action-in head)
+
+learner: "saleq_wm_learner"   # thread C: centralized, mixer-side SEM world model (unchanged)
+# world-model block (phase2-plan_v2 W9/W10/W13) -- unchanged
+wm_groups: 8             # L_w categorical groups
+wm_vertices: 8           # V vertices per group -> d_wm = 64
+wm_state_dim: 64         # d_s (z^s, 8-group SEM_det)
+wm_sa_dim: 64            # d_sa (phi^{sa})
+wm_traj_dim: 32          # aggregated imagination -> mixer state augmentation
+wm_k: 5                  # imagination depth (the method's value)
+wm_k_train: 1            # one-step prior training (W13)
+wm_alpha: 0.8            # KL balance (prior-training weight)
+wm_unimix: 0.01          # unimix ratio
+c_wm: 1.0               # world-model objective weight
+c_kl: 1.0
+c_rec: 1.0
+c_pred: 1.0
+c_act: 1.0
+
+mixer: "qmix"            # nq_learner maps this to nmix.Mixer(args) -> abs=True; the WM learner rebuilds it augmented
+mixing_embed_dim: 32
+hypernet_embed: 64
+
+lr: 0.001
+optimizer: "adam"
+td_lambda: 0.6
+q_lambda: False
+
+obs_agent_id: True
+obs_last_action: False
+
+name: "ablation_arm_2_terran"

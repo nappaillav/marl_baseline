@@ -1,0 +1,79 @@
+# =====================================================================================================
+# TERRAN VARIANT of ablation_arm_3 for SMACv2 10gen_terran (map_type == "terran_gen"), 3 seeds, GPU jobs
+# (cc_smacv2_ablation_terran.sh -> cc_smacv2_gpu.sh).  Run as:  --config=terran_ablations/ablation_arm_3
+# Copied from ablation_arm_3.yaml on 2026-08-26; the original header below describes the arm itself.
+# Changes vs the source: `agent: hpn_saleq` -> `agent: hpn_saleq_terran` (healer-aware head, required on terran_gen) and name.
+#   The learner / norm / WM settings of the arm are unchanged.
+# name: "ablation_arm_3_terran" (tb/sacred/model dirs are self-identifying; the map is also in unique_token).
+# =====================================================================================================
+# =====================================================================================================
+# ABLATION ARM 3 (plan id 3a) -- "SEM -> AvgL1Norm at the agent head, world model kept".
+#
+# Component ablated : the deterministic Simplicial Embedding at SEM site #1, phi^{oa} = sem(LN(z), 8 groups)
+#                     in the action-in Q-head. Replaced by the SALE/TD7 AvgL1Norm (the pre-SEM G2 default).
+#                     SEM site #2 (the WM's simplicial state embedding z^s) and the WM's categorical latent
+#                     are unchanged. This is the ladder rung that was missing: hpn_saleq_sem_qmix vs
+#                     hpn_saleq_qmix tests SEM-at-head WITHOUT the WM; this arm tests it WITH the WM.
+# Single-variable diff vs hpn_saleq_sem_wm_qmix.yaml : `saleq_norm: "sem"` -> `saleq_norm: "avgl1"`;
+#                     `saleq_sem_groups` removed (only read when saleq_norm == "sem"); `name`.
+# Deploys           : agent = hpn_saleq, mac = hpn_mac, learner = saleq_wm_learner (all untouched files).
+# Hypothesis        : the simplicial (grouped-softmax) structure of phi^{oa} contributes on top of the WM;
+#                     if arm 3 ~= full method, SEM at the head is redundant once the WM is present.
+# Race scope        : protoss + zerg ONLY. On 10gen_terran hpn_saleq fails loudly at the terran_gen assert
+#                     (a terran twin would only need `agent: hpn_saleq_terran`; not created for this study).
+# =====================================================================================================
+action_selector: "epsilon_greedy"
+epsilon_start: 1.0
+epsilon_finish: 0.05
+epsilon_anneal_time: 100000
+
+runner: "parallel"
+batch_size_run: 8
+buffer_size: 5000
+batch_size: 128
+t_max: 1050000            # validation budget; reference reaches ~1.0 win by ~430k
+
+target_update_interval: 200
+
+mac: "hpn_mac"
+agent: "hpn_saleq_terran"
+agent_output_type: q
+hpn_hyper_dim: 64
+hpn_hyper_activation: "relu"
+hpn_head_num: 1
+saleq_emb_dim: 32
+saleq_zsa_dim: 64
+saleq_hidden_dim: 64
+saleq_norm: "avgl1"      # <-- ABLATION: AvgL1Norm replaces sem(LN(z)) at phi^{oa}; was "sem"
+# saleq_sem_groups: REMOVED (only read when saleq_norm == "sem")
+
+learner: "saleq_wm_learner"   # thread C: centralized, mixer-side SEM world model (unchanged)
+# world-model block (phase2-plan_v2 W9/W10/W13) -- unchanged
+wm_groups: 8             # L_w categorical groups
+wm_vertices: 8           # V vertices per group -> d_wm = 64
+wm_state_dim: 64         # d_s (z^s, 8-group SEM_det)
+wm_sa_dim: 64            # d_sa (phi^{sa})
+wm_traj_dim: 32          # aggregated imagination -> mixer state augmentation
+wm_k: 5                  # imagination depth (the method's value)
+wm_k_train: 1            # one-step prior training (W13)
+wm_alpha: 0.8            # KL balance (prior-training weight)
+wm_unimix: 0.01          # unimix ratio
+c_wm: 1.0               # world-model objective weight
+c_kl: 1.0
+c_rec: 1.0
+c_pred: 1.0
+c_act: 1.0
+
+mixer: "qmix"            # nq_learner maps this to nmix.Mixer(args) -> abs=True; the WM learner rebuilds it augmented
+mixing_embed_dim: 32
+hypernet_embed: 64
+
+lr: 0.001
+optimizer: "adam"
+td_lambda: 0.6
+q_lambda: False
+
+obs_agent_id: True
+obs_last_action: False
+
+name: "ablation_arm_3_terran"

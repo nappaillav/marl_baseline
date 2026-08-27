@@ -1,0 +1,48 @@
+# =====================================================================================================
+# TERRAN VARIANT of ablation_arm_1 for SMACv2 10gen_terran (map_type == "terran_gen"), 3 seeds, GPU jobs
+# (cc_smacv2_ablation_terran.sh -> cc_smacv2_gpu.sh).  Run as:  --config=terran_ablations/ablation_arm_1
+# Copied from deepset_vdn.yaml on 2026-08-26; the original header below describes the arm itself.
+# Changes vs the source: name only. PLACEHOLDER for the arm-1B trunk ablation: the protoss/zerg arm-1 agent `flat_saleq` fails at
+#   the terran_gen assert (no healer handling), so this arm borrows deepset_vdn (DeepSet trunk, VDN mixer,
+#   nq_learner; no action-in head, no SEM, no WM) as instructed. NOTE: deepset_rnn has no map_type/healer
+#   logic either -- it runs on terran but scores medivac heal slots through the enemy read-out silently.
+# name: "ablation_arm_1_terran" (tb/sacred/model dirs are self-identifying; the map is also in unique_token).
+# =====================================================================================================
+# --- VDN specific parameters ---
+
+# use epsilon greedy action selector
+action_selector: "epsilon_greedy"
+epsilon_start: 1.0
+epsilon_finish: 0.05
+epsilon_anneal_time: 100000 # 500000 for 6h_vs_8z
+
+runner: "parallel"
+batch_size_run: 8
+buffer_size: 5000
+batch_size: 128
+
+t_max: 10050000
+
+# update the target network every {} episodes
+target_update_interval: 200
+
+# use the Q_Learner to train
+mac: "hpn_mac"
+agent: "deepset_rnn"
+hpn_hyper_dim: 64
+agent_output_type: q
+
+learner: "nq_learner"
+mixer: "vdn"
+mixing_embed_dim: 32
+hypernet_embed: 64
+lr: 0.001 # Learning rate for agents
+td_lambda: 0.6
+optimizer: 'adam'
+q_lambda: False
+
+#name: "vdn_env=8_adam_td_lambda"
+name: "ablation_arm_1_terran"
+
+obs_agent_id: True # Include the agent's one_hot id in the observation
+obs_last_action: False # Include the agent's last action (one_hot) in the observation

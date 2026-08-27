@@ -8,3 +8,6 @@ results
 
 # In-place edit backups; git is the backup now.
 *.bak-*
+
+# Slurm job logs: per-cluster, never committed.
+slurm-*.out

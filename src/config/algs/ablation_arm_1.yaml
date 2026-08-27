@@ -1,0 +1,74 @@
+# =====================================================================================================
+# ABLATION ARM 1 (plan id 1B) -- "flat trunk, no HPN": ablates the HPN permutation-invariant trunk.
+#
+# Component ablated : the HPN trunk (hypernet-generated per-entity input weights hyper_enemy/hyper_ally,
+#                     summed entity embeddings, unify_input_heads). Replaced by the vanilla pymarl RNNAgent
+#                     trunk: one linear layer over the flat slot-ordered [own ; enemies ; allies] obs -> ReLU
+#                     -> the same GRU. Everything downstream (action-in phi^{oa} head with SEM, SEM world
+#                     model, augmented QMIX mixer) is unchanged.
+# Single-variable diff vs hpn_saleq_sem_wm_qmix.yaml : `agent: hpn_saleq` -> `agent: flat_saleq`, `name`.
+#                     hpn_hyper_dim / hpn_hyper_activation become INERT (no hypernetworks are built);
+#                     hpn_head_num is kept because the parent __init__ reads it (must stay 1).
+# Deploys           : agent = flat_saleq (src/modules/agents/flat_saleq_agent.py, copy of hpn_saleq_agent.py)
+#                     mac = hpn_mac (still delivers the split own/enemy/ally inputs), learner = saleq_wm_learner.
+# Hypothesis        : the permutation-invariant HPN trunk (entity structure + hypernet conditioning) is
+#                     load-bearing; without it Q loses invariance to entity slot order and attack-Q loses
+#                     exact permutation-equivariance, and performance should drop.
+# Race scope        : protoss + zerg ONLY. On 10gen_terran the agent fails loudly at the terran_gen assert
+#                     (inherited from hpn_saleq); no terran twin exists for this arm.
+# =====================================================================================================
+action_selector: "epsilon_greedy"
+epsilon_start: 1.0
+epsilon_finish: 0.05
+epsilon_anneal_time: 100000
+
+runner: "parallel"
+batch_size_run: 8
+buffer_size: 5000
+batch_size: 128
+t_max: 1050000            # validation budget; reference reaches ~1.0 win by ~430k
+
+target_update_interval: 200
+
+mac: "hpn_mac"
+agent: "flat_saleq"       # <-- ABLATION: flat (non-HPN) trunk; was "hpn_saleq"
+agent_output_type: q
+hpn_hyper_dim: 64         # inert for flat_saleq (no hypernetworks); kept for a bit-identical config diff
+hpn_hyper_activation: "relu"   # inert for flat_saleq
+hpn_head_num: 1           # read by the parent __init__; must stay 1
+saleq_emb_dim: 32
+saleq_zsa_dim: 64
+saleq_hidden_dim: 64
+saleq_norm: "sem"        # SEM base (adopted after G3.1)
+saleq_sem_groups: 8
+
+learner: "saleq_wm_learner"   # thread C: centralized, mixer-side SEM world model (unchanged)
+# world-model block (phase2-plan_v2 W9/W10/W13) -- unchanged
+wm_groups: 8             # L_w categorical groups
+wm_vertices: 8           # V vertices per group -> d_wm = 64
+wm_state_dim: 64         # d_s (z^s, 8-group SEM_det)
+wm_sa_dim: 64            # d_sa (phi^{sa})
+wm_traj_dim: 32          # aggregated imagination -> mixer state augmentation
+wm_k: 5                  # imagination depth (the method's value)
+wm_k_train: 1            # one-step prior training (W13)
+wm_alpha: 0.8            # KL balance (prior-training weight)
+wm_unimix: 0.01          # unimix ratio
+c_wm: 1.0               # world-model objective weight
+c_kl: 1.0
+c_rec: 1.0
+c_pred: 1.0
+c_act: 1.0
+
+mixer: "qmix"            # nq_learner maps this to nmix.Mixer(args) -> abs=True; the WM learner rebuilds it augmented
+mixing_embed_dim: 32
+hypernet_embed: 64
+
+lr: 0.001
+optimizer: "adam"
+td_lambda: 0.6
+q_lambda: False
+
+obs_agent_id: True
+obs_last_action: False
+
+name: "ablation_arm_1"
