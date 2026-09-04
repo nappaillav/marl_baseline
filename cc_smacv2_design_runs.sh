@@ -5,6 +5,13 @@
 #   BATCH 1 (submitted 2026-08-27): axes A1 + A4  ->  5 algs x 2 races x 5 seeds = 50 jobs.
 #   BATCH 2 (this file as committed): axes B1 + B3  ->  6 algs x 2 races x 5 seeds = 60 jobs (protoss + zerg only;
 #            B1/B3 have no terran twin -- hpn_saleq_terran ignores saleq_norm variants and saleq_sem_temp).
+#   BATCH 3 (SUBMITTED ON RORQUAL 2026-08-27): axes B2 + B5 -> 70 CPU jobs + 21 terran GPU jobs run there, NOT on Nibi.
+#   BATCH 4 (SUBMITTED ON RORQUAL 2026-08-27): axis C1 -> 30 CPU jobs + 9 terran GPU jobs run there, NOT on Nibi.
+#   BATCH 5 (SUBMITTED ON NARVAL 2026-08-27): axis C4 -> 30 CPU jobs + 9 terran GPU jobs run there, NOT on Nibi.
+#   BATCH 6 (SUBMITTED ON NARVAL 2026-08-28): axes D1 + D2 + E3 -> 60 CPU jobs + 18 terran GPU jobs run there, NOT on Nibi.
+#   => all 300 CPU + 72 terran GPU jobs of the study are submitted across the three clusters.
+#   The repo is replicated on Rorqual and Narval; batches are split across clusters -- check the claim
+#   markers below before moving anything into `algs`.
 #   The terran counterpart (GPU, 3 seeds, config-only twins) is cc_smacv2_design_terran.sh.
 #
 # Usage:  bash cc_smacv2_design_runs.sh
@@ -75,26 +82,22 @@ algs=(
   design_space/design_b3_temp_0p5
   design_space/design_b3_temp_2
 )
-# ---- LATER BATCHES (not yet launched; move lines into `algs` when their batch is due) ----
-#  design_space/design_b2_groups_2
-#  design_space/design_b2_groups_4
-#  design_space/design_b2_groups_16
-#  design_space/design_b2_groups_32
-#  design_space/design_b5_unimix_0p001
-#  design_space/design_b5_unimix_0p005
-#  design_space/design_b5_unimix_0p5
-#  design_space/design_c1_lr_1e-4
-#  design_space/design_c1_lr_5e-4
-#  design_space/design_c1_lr_1e-2
-#  design_space/design_c4_tdlambda_0p1
-#  design_space/design_c4_tdlambda_0p3
-#  design_space/design_c4_tdlambda_0p9
-#  design_space/design_d1_cwm_0p25
-#  design_space/design_d1_cwm_4
-#  design_space/design_d2_alpha_0p5
-#  design_space/design_d2_alpha_1p0
-#  design_space/design_e3_mix_s_zs_traj
-#  design_space/design_e3_mix_zs_traj
+# ---- BATCH 3: B2 + B5  <-- SUBMITTED ON RORQUAL 2026-08-27 (70 CPU jobs + 21 terran GPU jobs), do not resubmit ----
+#  design_space/design_b2_groups_{2,4,16,32}
+#  design_space/design_b5_unimix_{0p001,0p005,0p5}
+#  (all three races on Rorqual: protoss + zerg here, the B2/B5 terran twins via its cc_smacv2_design_terran.sh)
+# ---- BATCH 4: C1     (SUBMITTED ON RORQUAL 2026-08-27, 30 CPU jobs + 9 terran GPU jobs) -- do not resubmit ----
+#  design_space/design_c1_lr_{1e-4,5e-4,1e-2}
+#  (all three races on Rorqual: protoss + zerg here, the C1 terran twins via its cc_smacv2_design_terran.sh)
+# ---- BATCH 5: C4     (SUBMITTED ON NARVAL 2026-08-27, all three races) ----
+#  design_space/design_c4_tdlambda_{0p1,0p3,0p9}
+#  (30 CPU jobs protoss + zerg AND the 9 terran twin jobs -- all on Narval; do not resubmit anywhere)
+# ---- BATCH 6: D1 + D2 + E3  (SUBMITTED ON NARVAL 2026-08-28, all three races) -- do not resubmit ----
+#  design_space/design_d1_cwm_{0p25,4}
+#  design_space/design_d2_alpha_{0p5,1p0}
+#  design_space/design_e3_mix_{s_zs_traj,zs_traj}
+#  (60 CPU jobs protoss + zerg AND the 18 terran twin jobs -- all on Narval)
+# ---- ALL 30 VARIANTS ARE NOW SUBMITTED (Nibi: batches 1-2; Rorqual: 3-4; Narval: 5-6). Nothing left to launch. ----
 
 t_max=4005000
 walltime=71:55:00

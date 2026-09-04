@@ -3,7 +3,12 @@
 # terran_5v5 (10gen_terran), 3 seeds each, GPU jobs (MIG h100_1g.10gb via cc_smacv2_gpu_ablation_runs.sh),
 # t_max=4005000, 11:59:00 wall per job. Submitted in BATCHES (the study is large); edit `algs` per batch.
 #
-#   BATCH 1 (this file as committed): axes A1 + A4  ->  5 algs x 1 race x 3 seeds = 15 jobs.
+#   BATCH 1 (submitted on Nibi 2026-08-27): axes A1 + A4  ->  5 algs x 1 race x 3 seeds = 15 jobs.
+#   BATCHES 3 + 4 (SUBMITTED ON RORQUAL 2026-08-27): B2 + B5 + C1 terran twins -> 30 GPU jobs run there, NOT on Nibi.
+#   BATCH 5 (SUBMITTED ON NARVAL 2026-08-27): axis C4 terran twins -> 9 GPU jobs run there, NOT on Nibi.
+#   BATCH 6 (SUBMITTED ON NARVAL 2026-08-28): D1 + D2 + E3 terran twins -> 18 GPU jobs run there, NOT on Nibi.
+#   The repo is replicated on Rorqual and Narval; batches are split across clusters -- check the claim
+#   markers below (and in cc_smacv2_design_runs.sh) before moving anything into `algs`.
 #
 # Usage:  bash cc_smacv2_design_terran.sh
 # Check:  squeue -u $USER          (wait >= 60 s between checks)
@@ -66,26 +71,17 @@ algs=(
   terran_design_space/terran_design_a4_traj_16
   terran_design_space/terran_design_a4_traj_64
 )
-# ---- LATER BATCHES (not yet launched; move lines into `algs` when their batch is due) ----
-#  terran_design_space/terran_design_b2_groups_2
-#  terran_design_space/terran_design_b2_groups_4
-#  terran_design_space/terran_design_b2_groups_16
-#  terran_design_space/terran_design_b2_groups_32
-#  terran_design_space/terran_design_b5_unimix_0p001
-#  terran_design_space/terran_design_b5_unimix_0p005
-#  terran_design_space/terran_design_b5_unimix_0p5
-#  terran_design_space/terran_design_c1_lr_1e-4
-#  terran_design_space/terran_design_c1_lr_5e-4
-#  terran_design_space/terran_design_c1_lr_1e-2
-#  terran_design_space/terran_design_c4_tdlambda_0p1
-#  terran_design_space/terran_design_c4_tdlambda_0p3
-#  terran_design_space/terran_design_c4_tdlambda_0p9
-#  terran_design_space/terran_design_d1_cwm_0p25
-#  terran_design_space/terran_design_d1_cwm_4
-#  terran_design_space/terran_design_d2_alpha_0p5
-#  terran_design_space/terran_design_d2_alpha_1p0
-#  terran_design_space/terran_design_e3_mix_s_zs_traj
-#  terran_design_space/terran_design_e3_mix_zs_traj
+# ---- BATCH 5: C4     (SUBMITTED ON NARVAL 2026-08-27, 9 terran GPU jobs) -- do not resubmit ----
+#  terran_design_space/terran_design_c4_tdlambda_{0p1,0p3,0p9}
+# ---- BATCHES 3 + 4: B2 + B5 + C1 terran twins (SUBMITTED ON RORQUAL 2026-08-27, 30 GPU jobs) -- do not resubmit ----
+#  terran_design_space/terran_design_b2_groups_{2,4,16,32}
+#  terran_design_space/terran_design_b5_unimix_{0p001,0p005,0p5}
+#  terran_design_space/terran_design_c1_lr_{1e-4,5e-4,1e-2}
+# ---- BATCH 6: D1 + D2 + E3 terran twins (SUBMITTED ON NARVAL 2026-08-28, 18 GPU jobs) -- do not resubmit ----
+#  terran_design_space/terran_design_d1_cwm_{0p25,4}
+#  terran_design_space/terran_design_d2_alpha_{0p5,1p0}
+#  terran_design_space/terran_design_e3_mix_{s_zs_traj,zs_traj}
+# ---- ALL 24 TERRAN TWINS ARE NOW SUBMITTED (Nibi: A1/A4; Rorqual: B2/B5/C1; Narval: C4/D1/D2/E3). Nothing left to launch. ----
 
 t_max=4005000
 walltime=11:59:00
