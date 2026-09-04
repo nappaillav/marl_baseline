@@ -73,9 +73,9 @@ for race in protoss zerg; do
 done
 for s in 1 2 3 4 5; do run_one "init_terran_s${s}" hpn_saleq_terran_sem_wm_qmix sc2_v2_terran "" "${s}"; done
 
-# SMACv1: 6h_vs_8z and corridor, seeds 1-3
+# SMACv1: 6h_vs_8z and corridor, seeds 1-5 (seeds 4-5 added 2026-09-04 with cc_reference_runs_extra.sh)
 for map in 6h_vs_8z corridor; do
-  for s in 1 2 3; do run_one "init_v1_${map}_s${s}" hpn_saleq_sem_wm_qmix sc2 "${map}" "${s}"; done
+  for s in 1 2 3 4 5; do run_one "init_v1_${map}_s${s}" hpn_saleq_sem_wm_qmix sc2 "${map}" "${s}"; done
 done
 
-echo "done. checkpoints: $(ls -d "${out}"/models/*/algo=*/*/*/*/[0-9]* 2>/dev/null | wc -l) / 21"
+echo "done. checkpoints: $(ls -d "${out}"/models/*/algo=*/*/*/*/[0-9]* 2>/dev/null | wc -l) / 25"
