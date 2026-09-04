@@ -99,7 +99,7 @@ v1_env=sc2
 v1_maps=(6h_vs_8z corridor)
 v1_seeds=(1 2 3)
 v1_t_max=2050000        # MUST be passed (alg config carries 1.05M; see header)
-v1_walltime=5:59:00
+v1_walltime=11:59:00    # raised from 5:59 on 2026-09-04 (user decision); still inside the <=12 h fast-start bucket
 v1_save_interval=250000 # 8 checkpoints (250k ... 2M) + the final one at 2.05M
 
 # Per-map resource override. corridor (6 zealots vs 24 zerglings, obs 156 / state 282, 400-step
