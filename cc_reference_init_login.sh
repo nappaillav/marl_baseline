@@ -17,8 +17,9 @@
 # (env_n=1/...bs=8_128 instead of the training runs' env_n=8/...bs=5000_128); probes reference the
 # checkpoint directory by absolute path, so this is harmless.
 #
-# Output goes OUTSIDE the study checkout (results/ holds only the training runs):
-#   /home/zwang182/MARL/init_checkpoints/models/<env>/algo=<name>-agent=<agent>/env_n=1/<hp>/<token>/<step>/
+# Output goes to its own folder inside the study checkout, next to results/ (which holds only the
+# training runs); the folder is not tracked by git (moved here from ~/MARL/init_checkpoints on 2026-09-04):
+#   /home/zwang182/MARL/marl_p3_smacv2/init_checkpoints/models/<env>/algo=<name>-agent=<agent>/env_n=1/<hp>/<token>/<step>/
 # with <token> = <name>_<map>_seed<N>__<timestamp> and <step> ~ 1000-1100. Logs: <out>/<tag>.log.
 #
 # Usage (login node; sequential; ~15-20 min for all 21; re-running skips combinations that already
@@ -28,7 +29,7 @@
 
 set -u
 repo=/home/zwang182/MARL/marl_p3_smacv2
-out=/home/zwang182/MARL/init_checkpoints
+out=/home/zwang182/MARL/marl_p3_smacv2/init_checkpoints
 mkdir -p "${out}"
 
 module purge
