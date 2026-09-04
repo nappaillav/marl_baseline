@@ -61,7 +61,9 @@ usetb=True              # tensorboard curves per full run (tb_logs/<name>_<map>_
 save_model=True         # checkpoints are the raw material of every probe (plans I.4)
 ckpt=""                 # fresh runs only -- never resume (rule in the job-script header)
 
-run_init=true           # also submit the 21 near-initialisation runs; false -> full runs only
+run_init=false          # false (2026-09-04 decision): the 21 near-initialisation checkpoints are produced on the
+                        # LOGIN node by cc_reference_init_login.sh (single env, tiny buffer, CPU, ~1 min each);
+                        # set true only to submit them as 0:20 GPU jobs instead
 init_t_max=1000
 init_walltime=0:20:00
 init_usetb=False
