@@ -102,14 +102,24 @@ v1_t_max=2050000        # MUST be passed (alg config carries 1.05M; see header)
 v1_walltime=5:59:00
 v1_save_interval=250000 # 8 checkpoints (250k ... 2M) + the final one at 2.05M
 
+# Per-map resource override. corridor (6 zealots vs 24 zerglings, obs 156 / state 282, 400-step
+# episodes) is the memory outlier: marl_project3 SETUP_ENVIRONMENT.md section 9 measured 22.6-24 GB
+# VRAM and ~25 GB RAM for the full model on it, which does not fit the job script's 10 GB MIG slice
+# and is tight on its 30G. Options given on the sbatch command line override the #SBATCH lines in
+# the job script, so corridor gets a 3g.40gb slice and 40G RAM here without touching the script.
+# 6h_vs_8z (6 vs 8, obs 78 / state 140) is 5v5-sized and keeps the defaults.
+v1_resources_corridor="--gpus=h100_3g.40gb:1 --mem=40G"
+
 for map in "${v1_maps[@]}"
 do
+  extra=""
+  if [ "${map}" = "corridor" ]; then extra="${v1_resources_corridor}"; fi
   for s in "${v1_seeds[@]}"
   do
-    sbatch --time=${v1_walltime} --job-name=full_v1_${map}_s${s} \
+    sbatch --time=${v1_walltime} --job-name=full_v1_${map}_s${s} ${extra} \
       ${jobScript} ${mainPy} ${v1_alg} ${v1_env} ${s} ${v1_t_max} ${useCuda} ${usetb} ${save_model} "${ckpt}" ${v1_save_interval} ${map}
     if [ "${run_init}" = true ]; then
-      sbatch --time=${init_walltime} --job-name=init_v1_${map}_s${s} \
+      sbatch --time=${init_walltime} --job-name=init_v1_${map}_s${s} ${extra} \
         ${jobScript} ${mainPy} ${v1_alg} ${v1_env} ${s} ${init_t_max} ${useCuda} ${init_usetb} ${save_model} "${ckpt}" ${v1_save_interval} ${map}
     fi
   done
