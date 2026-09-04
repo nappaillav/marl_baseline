@@ -11,3 +11,6 @@ results
 
 # Slurm job logs: per-cluster, never committed.
 slurm-*.out
+
+# near-initialisation checkpoints written by cc_reference_init_login.sh (binaries, ~25 MB)
+init_checkpoints/
