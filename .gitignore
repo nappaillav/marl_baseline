@@ -14,3 +14,13 @@ slurm-*.out
 
 # near-initialisation checkpoints written by cc_reference_init_login.sh (binaries, ~25 MB)
 init_checkpoints/
+
+# --- marl-baseline branch ---------------------------------------------------
+# Launchers/job scripts for the method's own studies live on the `fir` branch and are
+# deliberately NOT tracked here; they remain on disk so the Fir working copy still runs.
+# Listed so `git add -A` cannot pull them back in.
+cc_*
+!cc_baselines_10v10_gpu.sh
+!cc_baselines_10v10_launch.sh
+testrun*.sh
+MANIFEST_*.txt
