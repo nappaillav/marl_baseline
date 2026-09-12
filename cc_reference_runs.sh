@@ -1,5 +1,16 @@
 #!/bin/bash
-# Reference-run launcher: the FULL METHOD only, all GPU jobs (MIG h100_1g.10gb via cc_reference_gpu_runs.sh).
+# ===== FIR VERSION (ported from the `nibi` branch, 2026-09-11) =========================
+# Retargeted for Fir: repo root /home/zwang182/MARL/marl_p3/marl_p3_smacv2, SC2PATH
+# /home/zwang182/MARL/sc2/3rdparty/StarCraftII, GPU gres nvidia_h100_80gb_hbm3_* (Fir's
+# canonical MIG names). --account and the module stack are UNCHANGED: def-dpmeger,
+# def-dpmeger_cpu and def-dpmeger_gpu are all valid associations here, and StdEnv/2023 +
+# python/3.11 + cuda/12.2 + scipy-stack + epymarlEnv runs this repo unmodified (verified
+# 2026-09-11: SMACv1 6h_vs_8z and all three SMACv2 races, CPU and MIG, exit 0).
+# CAUTION: every wall-time, steps/s and RSS figure below is a NIBI measurement. A 12k-step
+# Fir sample on 2026-09-11 ran ~119 env-steps/s on 8 CPU cores and ~148 on a 1g.10gb MIG
+# slice, vs the 18-53 steps/s these headers assume -- re-measure before trusting --time.
+# =======================================================================================
+# Reference-run launcher: the FULL METHOD only, all GPU jobs (MIG 1g.10gb via cc_reference_gpu_runs.sh).
 #   SMACv2  protoss_5v5 + zerg_5v5 (hpn_saleq_sem_wm_qmix) and terran_5v5 (hpn_saleq_terran_sem_wm_qmix),
 #           seeds 1-5, t_max=5005000, 11:59:00 wall                      3 races x 5 seeds = 15 jobs
 #   SMACv1  6h_vs_8z + corridor (hpn_saleq_sem_wm_qmix, --env-config=sc2 + env_args.map_name),
@@ -34,7 +45,7 @@
 # is applied after the env config's 2.05M (main.py: env then alg update), so the default would be the
 # validation budget. 2.05M at the terran GPU rate above is ~2.6 h; corridor (24 enemies, 400-step
 # limit) is slower per step and its VRAM/RAM need on a 10 GB slice is UNVERIFIED -- see the corridor
-# note in the job-script header (OOM -> resubmit with --gpus=h100_2g.20gb:1 on the sbatch line).
+# note in the job-script header (OOM -> resubmit with --gpus=nvidia_h100_80gb_hbm3_2g.20gb:1 on the sbatch line).
 # Both maps have no healer units (map_type hydralisks / zealots), so the standard hpn_saleq agent
 # applies unchanged. MMM2 is deliberately NOT included: hpn_saleq asserts on map_type MMM
 # (src/modules/agents/hpn_saleq_agent.py:62 -- rescue/heal slots are unsupported by this agent).
@@ -53,8 +64,8 @@
 # Seeds: `seed=N` (NOT env_args.seed -- INTEGRATION.md section 6); sacred ids are arrival-ordered,
 # so read `seed` from each run's config.json for analysis.
 
-mainPy="/home/zwang182/MARL/marl_p3_smacv2/src/main.py"
-jobScript="/home/zwang182/MARL/marl_p3_smacv2/cc_reference_gpu_runs.sh"   # copy of cc_smacv2_gpu_ablation_runs.sh + 11th arg map_name
+mainPy="/home/zwang182/MARL/marl_p3/marl_p3_smacv2/src/main.py"
+jobScript="/home/zwang182/MARL/marl_p3/marl_p3_smacv2/cc_reference_gpu_runs.sh"   # copy of cc_smacv2_gpu_ablation_runs.sh + 11th arg map_name
 
 useCuda=True            # ignored by the job script, which forces use_cuda=True
 usetb=True              # tensorboard curves per full run (tb_logs/<name>_<map>_seed<N>__<ts>)
@@ -110,7 +121,7 @@ v1_save_interval=250000 # 8 checkpoints (250k ... 2M) + the final one at 2.05M
 # and is tight on its 30G. Options given on the sbatch command line override the #SBATCH lines in
 # the job script, so corridor gets a 3g.40gb slice and 40G RAM here without touching the script.
 # 6h_vs_8z (6 vs 8, obs 78 / state 140) is 5v5-sized and keeps the defaults.
-v1_resources_corridor="--gpus=h100_3g.40gb:1 --mem=40G"
+v1_resources_corridor="--gpus=nvidia_h100_80gb_hbm3_3g.40gb:1 --mem=40G"
 
 for map in "${v1_maps[@]}"
 do

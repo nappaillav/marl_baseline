@@ -29,7 +29,7 @@ if smac:
     REGISTRY["sc2"] = partial(env_fn, env=StarCraft2EnvWrapper)
     if sys.platform == "linux":
         os.environ.setdefault("SC2PATH",
-                              os.path.join("/home/zwang182/MARL/sc2_410", "StarCraftII"))
+                              os.path.join("/home/zwang182/MARL/sc2/3rdparty", "StarCraftII"))
 else:
     print("SMAC V1 is not supported...")
 
@@ -37,7 +37,7 @@ if smacv2:
     REGISTRY["sc2_v2"] = partial(env_fn, env=StarCraft2Env2Wrapper)
     if sys.platform == "linux":
         os.environ.setdefault("SC2PATH",
-                              os.path.join("/home/zwang182/MARL/sc2_410", "StarCraftII"))
+                              os.path.join("/home/zwang182/MARL/sc2/3rdparty", "StarCraftII"))
 else:
     print("SMAC V2 is not supported...")
 

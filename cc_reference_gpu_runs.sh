@@ -1,10 +1,22 @@
 #!/bin/bash
 #SBATCH --account=def-dpmeger_gpu
-#SBATCH --gpus=h100_1g.10gb:1
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=30G
 #SBATCH --time=0:30:00
 #SBATCH --output=slurm-%j.out
+
+# ===== FIR VERSION (ported from the `nibi` branch, 2026-09-11) =========================
+# Retargeted for Fir: repo root /home/zwang182/MARL/marl_p3/marl_p3_smacv2, SC2PATH
+# /home/zwang182/MARL/sc2/3rdparty/StarCraftII, GPU gres nvidia_h100_80gb_hbm3_* (Fir's
+# canonical MIG names). --account and the module stack are UNCHANGED: def-dpmeger,
+# def-dpmeger_cpu and def-dpmeger_gpu are all valid associations here, and StdEnv/2023 +
+# python/3.11 + cuda/12.2 + scipy-stack + epymarlEnv runs this repo unmodified (verified
+# 2026-09-11: SMACv1 6h_vs_8z and all three SMACv2 races, CPU and MIG, exit 0).
+# CAUTION: every wall-time, steps/s and RSS figure below is a NIBI measurement. A 12k-step
+# Fir sample on 2026-09-11 ran ~119 env-steps/s on 8 CPU cores and ~148 on a 1g.10gb MIG
+# slice, vs the 18-53 steps/s these headers assume -- re-measure before trusting --time.
+# =======================================================================================
 
 # REFERENCE-RUN GPU job script: the FULL METHOD (hpn_saleq_sem_wm_qmix on protoss / zerg / SMACv1,
 # hpn_saleq_terran_sem_wm_qmix on terran) run as the reference row of the ablation study and of the
@@ -31,11 +43,11 @@
 # SETUP_ENVIRONMENT.md section 9 measures a 5m_vs_6m PAIR at ~5 GB; 24-agent corridor is the
 # 22.6 GB outlier, not us). A 1g.10gb slice queues as fast as a full H100 here and
 # leaves ample headroom -- VRAM does climb as episodes lengthen toward the 400-step
-# limit, so if a run ever OOMs, step up to h100_2g.20gb rather than to a whole card.
+# limit, so if a run ever OOMs, step up to nvidia_h100_80gb_hbm3_2g.20gb rather than to a whole card.
 # NOTE for the SMACv1 corridor runs (24 enemies, 400-step limit): that 22.6 GB (24 GB with the
 # world model, ~25 GB RAM) was measured on a lab 3090 with a 3M budget; whether the learner alone
 # (cpu_inference=True here) fits a 10 GB slice is UNVERIFIED. If a corridor job OOMs, resubmit it
-# with `--gpus=h100_2g.20gb:1` (or 3g.40gb) on the sbatch line -- command-line flags override the
+# with `--gpus=nvidia_h100_80gb_hbm3_2g.20gb:1` (or 3g.40gb) on the sbatch line -- command-line flags override the
 # #SBATCH block -- and keep this file as is for the other runs.
 #
 # cpu_inference is deliberately NOT passed, so it keeps default.yaml's `True`. That means
@@ -56,7 +68,7 @@ export MKL_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 
-export SC2PATH=/home/zwang182/MARL/sc2_410/StarCraftII
+export SC2PATH=/home/zwang182/MARL/sc2/3rdparty/StarCraftII
 
 # Fail fast if the GPU is not visible. run.py:331-333 SILENTLY flips use_cuda to False
 # when torch.cuda.is_available() is False, so without this check a broken GPU job would
@@ -84,7 +96,7 @@ if [ -n "${mapName}" ]; then
   mapArg="env_args.map_name=${mapName}"
 fi
 
-resultsPath=/home/zwang182/MARL/marl_p3_smacv2/results
+resultsPath=/home/zwang182/MARL/marl_p3/marl_p3_smacv2/results
 
 echo "main.py=${mainPy} algorithm=${alg} sc2_env=${sc2_env} map_name=${mapName:-<env-config default>} seed=${seed} t_max=${t_max} use_cuda=${useCuda} use_tensorboard=${usetb} save_model=${saveModel} save_model_interval=${saveInterval}"
 python ${mainPy} --config=${alg} --env-config=${sc2_env} with seed=${seed} t_max=${t_max} \

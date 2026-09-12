@@ -1,4 +1,15 @@
 #!/bin/bash
+# ===== FIR VERSION (ported from the `nibi` branch, 2026-09-11) =========================
+# Retargeted for Fir: repo root /home/zwang182/MARL/marl_p3/marl_p3_smacv2, SC2PATH
+# /home/zwang182/MARL/sc2/3rdparty/StarCraftII, GPU gres nvidia_h100_80gb_hbm3_* (Fir's
+# canonical MIG names). --account and the module stack are UNCHANGED: def-dpmeger,
+# def-dpmeger_cpu and def-dpmeger_gpu are all valid associations here, and StdEnv/2023 +
+# python/3.11 + cuda/12.2 + scipy-stack + epymarlEnv runs this repo unmodified (verified
+# 2026-09-11: SMACv1 6h_vs_8z and all three SMACv2 races, CPU and MIG, exit 0).
+# CAUTION: every wall-time, steps/s and RSS figure below is a NIBI measurement. A 12k-step
+# Fir sample on 2026-09-11 ran ~119 env-steps/s on 8 CPU cores and ~148 on a 1g.10gb MIG
+# slice, vs the 18-53 steps/s these headers assume -- re-measure before trusting --time.
+# =======================================================================================
 # Resume timed-out SMACv2 study runs from their latest checkpoint.
 #
 # Usage:  bash cc_smacv2_resume.sh <race> <alg> <seed> [<seed> ...]
@@ -54,10 +65,10 @@ if [[ "$alg" == "study" ]]; then
 fi
 
 if [[ -z "$race" || -z "$alg" || $# -lt 1 ]]; then
-  sed -n '2,24p' "$0"; exit 1
+  sed -n '13,35p' "$0"; exit 1
 fi
 
-repo=/home/zwang182/MARL/marl_p3_smacv2
+repo=/home/zwang182/MARL/marl_p3/marl_p3_smacv2
 mainPy=$repo/src/main.py
 RESULTS_DIR=${RESULTS_DIR:-$repo/results}
 T_MAX=${T_MAX:-5005000}

@@ -1,4 +1,15 @@
 #!/bin/bash
+# ===== FIR VERSION (ported from the `nibi` branch, 2026-09-11) =========================
+# Retargeted for Fir: repo root /home/zwang182/MARL/marl_p3/marl_p3_smacv2, SC2PATH
+# /home/zwang182/MARL/sc2/3rdparty/StarCraftII, GPU gres nvidia_h100_80gb_hbm3_* (Fir's
+# canonical MIG names). --account and the module stack are UNCHANGED: def-dpmeger,
+# def-dpmeger_cpu and def-dpmeger_gpu are all valid associations here, and StdEnv/2023 +
+# python/3.11 + cuda/12.2 + scipy-stack + epymarlEnv runs this repo unmodified (verified
+# 2026-09-11: SMACv1 6h_vs_8z and all three SMACv2 races, CPU and MIG, exit 0).
+# CAUTION: every wall-time, steps/s and RSS figure below is a NIBI measurement. A 12k-step
+# Fir sample on 2026-09-11 ran ~119 env-steps/s on 8 CPU cores and ~148 on a 1g.10gb MIG
+# slice, vs the 18-53 steps/s these headers assume -- re-measure before trusting --time.
+# =======================================================================================
 # Additional Full-method reference runs, decided 2026-09-04 (evening) after the first batch finished. All GPU jobs
 # through cc_reference_gpu_runs.sh, same flags as cc_reference_runs.sh:
 #
@@ -18,8 +29,8 @@
 # Afterwards: run cc_reference_init_login.sh once more on the login node to add the four new SMACv1
 # near-initialisation checkpoints (it skips the 21 that exist).
 
-mainPy="/home/zwang182/MARL/marl_p3_smacv2/src/main.py"
-jobScript="/home/zwang182/MARL/marl_p3_smacv2/cc_reference_gpu_runs.sh"
+mainPy="/home/zwang182/MARL/marl_p3/marl_p3_smacv2/src/main.py"
+jobScript="/home/zwang182/MARL/marl_p3/marl_p3_smacv2/cc_reference_gpu_runs.sh"
 
 useCuda=True
 usetb=True
@@ -36,7 +47,7 @@ v1_env=sc2
 v1_t_max=2050000
 v1_walltime=11:59:00
 v1_save_interval=250000
-v1_resources_corridor="--gpus=h100_3g.40gb:1 --mem=40G"
+v1_resources_corridor="--gpus=nvidia_h100_80gb_hbm3_3g.40gb:1 --mem=40G"
 
 for map in 6h_vs_8z corridor; do
   extra=""

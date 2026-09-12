@@ -5,15 +5,28 @@
 #SBATCH --time=0:59:00
 #SBATCH --output=slurm-%j.out
 
+# ===== FIR VERSION (ported from the `nibi` branch, 2026-09-11) =========================
+# Retargeted for Fir: repo root /home/zwang182/MARL/marl_p3/marl_p3_smacv2, SC2PATH
+# /home/zwang182/MARL/sc2/3rdparty/StarCraftII, GPU gres nvidia_h100_80gb_hbm3_* (Fir's
+# canonical MIG names). --account and the module stack are UNCHANGED: def-dpmeger,
+# def-dpmeger_cpu and def-dpmeger_gpu are all valid associations here, and StdEnv/2023 +
+# python/3.11 + cuda/12.2 + scipy-stack + epymarlEnv runs this repo unmodified (verified
+# 2026-09-11: SMACv1 6h_vs_8z and all three SMACv2 races, CPU and MIG, exit 0).
+# CAUTION: every wall-time, steps/s and RSS figure below is a NIBI measurement. A 12k-step
+# Fir sample on 2026-09-11 ran ~119 env-steps/s on 8 CPU cores and ~148 on a 1g.10gb MIG
+# slice, vs the 18-53 steps/s these headers assume -- re-measure before trusting --time.
+# =======================================================================================
+
 # ABLATION-STUDY job script. Copy of cc_smacv2_cpu.sh made 2026-08-26 so that the ablation
 # launcher (cc_smacv2_test1.sh) does not depend on a file other sessions may edit.
 # Only difference vs the copy source: an optional 10th positional arg `save_model_interval`
 # (empty -> 2000000, the default.yaml value); the study passes 250000.
 #
-# CPU-only SMACv2 job for Nibi. Adapted from cc_mamujoco_cpu.sh (MAMuJoCo, other cluster).
+# CPU-only SMACv2 job, written for Nibi and now retargeted to Fir (banner above). Adapted
+# from cc_mamujoco_cpu.sh (MAMuJoCo, other cluster).
 # Same positional-argument interface; see cc_smacv2_test1.sh for the launcher.
 #
-# Nibi-specific changes vs. the MAMuJoCo original:
+# Cluster-specific changes vs. the MAMuJoCo original (each one still correct on Fir):
 #   - StdEnv/2023 + python/3.11 (StdEnv/2020 + python/3.9.6 do not exist here)
 #   - epymarlEnv venv; the modules MUST be loaded before `activate` or numpy is missing
 #   - SC2PATH instead of the MuJoCo LD_LIBRARY_PATH
@@ -43,7 +56,7 @@ export MKL_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 
-export SC2PATH=/home/zwang182/MARL/sc2_410/StarCraftII
+export SC2PATH=/home/zwang182/MARL/sc2/3rdparty/StarCraftII
 
 mainPy=$1
 alg=$2
@@ -60,7 +73,7 @@ saveInterval=${10:-2000000}   # optional 10th arg; empty -> default.yaml value (
 # is ample for these 30-minute runs -- save_model_interval=2000000 means no checkpoint is
 # written before the wall clock stops them. Watch it for full-length runs: INTEGRATION.md 1
 # records a zerg run killed by ENOSPC when results sat on a full shared volume.
-resultsPath=/home/zwang182/MARL/marl_p3_smacv2/results
+resultsPath=/home/zwang182/MARL/marl_p3/marl_p3_smacv2/results
 
 echo "main.py=${mainPy} algorithm=${alg} smacv2_env=${sc2_env} seed=${seed} t_max=${t_max} use_cuda=${useCuda} use_tensorboard=${usetb} save_model=${saveModel} save_model_interval=${saveInterval}"
 python ${mainPy} --config=${alg} --env-config=${sc2_env} with seed=${seed} t_max=${t_max} \

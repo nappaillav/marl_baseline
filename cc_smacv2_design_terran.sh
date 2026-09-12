@@ -1,6 +1,17 @@
 #!/bin/bash
+# ===== FIR VERSION (ported from the `nibi` branch, 2026-09-11) =========================
+# Retargeted for Fir: repo root /home/zwang182/MARL/marl_p3/marl_p3_smacv2, SC2PATH
+# /home/zwang182/MARL/sc2/3rdparty/StarCraftII, GPU gres nvidia_h100_80gb_hbm3_* (Fir's
+# canonical MIG names). --account and the module stack are UNCHANGED: def-dpmeger,
+# def-dpmeger_cpu and def-dpmeger_gpu are all valid associations here, and StdEnv/2023 +
+# python/3.11 + cuda/12.2 + scipy-stack + epymarlEnv runs this repo unmodified (verified
+# 2026-09-11: SMACv1 6h_vs_8z and all three SMACv2 races, CPU and MIG, exit 0).
+# CAUTION: every wall-time, steps/s and RSS figure below is a NIBI measurement. A 12k-step
+# Fir sample on 2026-09-11 ran ~119 env-steps/s on 8 CPU cores and ~148 on a 1g.10gb MIG
+# slice, vs the 18-53 steps/s these headers assume -- re-measure before trusting --time.
+# =======================================================================================
 # DESIGN-SPACE STUDY -- TERRAN launcher: config-only terran twins of the design variants on SMACv2
-# terran_5v5 (10gen_terran), 3 seeds each, GPU jobs (MIG h100_1g.10gb via cc_smacv2_gpu_ablation_runs.sh),
+# terran_5v5 (10gen_terran), 3 seeds each, GPU jobs (MIG 1g.10gb via cc_smacv2_gpu_ablation_runs.sh),
 # t_max=4005000, 11:59:00 wall per job. Submitted in BATCHES (the study is large); edit `algs` per batch.
 #
 #   BATCH 1 (submitted on Nibi 2026-08-27): axes A1 + A4  ->  5 algs x 1 race x 3 seeds = 15 jobs.
@@ -56,8 +67,8 @@
 #
 # Seeds: `seed=N` (NOT env_args.seed -- INTEGRATION.md section 6).
 
-mainPy="/home/zwang182/MARL/marl_p3_smacv2/src/main.py"
-jobScript="/home/zwang182/MARL/marl_p3_smacv2/cc_smacv2_gpu_ablation_runs.sh"   # study-specific copy of cc_smacv2_gpu.sh (10th arg = save_model_interval)
+mainPy="/home/zwang182/MARL/marl_p3/marl_p3_smacv2/src/main.py"
+jobScript="/home/zwang182/MARL/marl_p3/marl_p3_smacv2/cc_smacv2_gpu_ablation_runs.sh"   # study-specific copy of cc_smacv2_gpu.sh (10th arg = save_model_interval)
 
 race=terran
 sc2_env="sc2_v2_${race}"

@@ -1,0 +1,42 @@
+marl_p3_smacv2 -- SMACv2 10v10 work, for transfer to another cluster
+Created 2026-09-11T16:07:05-04:00 on l2.nibi.sharcnet
+
+BASE COMMIT: fc853a34c6d2511e18164289524e6a48c84e88fd  (branch nibi, 2026-09-04)
+  Apply these files ON TOP of that commit. Extract at the repo root:
+      tar -xzf marl_p3_smacv2_10v10.tgz -C /path/to/marl_p3_smacv2
+
+NEW (untracked on nibi):
+  src/config/envs/sc2_v2_protoss_10v10.yaml
+  src/config/envs/sc2_v2_terran_10v10.yaml
+  src/config/envs/sc2_v2_zerg_10v10.yaml
+      Byte-identical to the 5v5 files except n_units: 5->10 and
+      start_positions.n_enemies: 5->10. The 10gen_* maps declare n_agents=10 /
+      n_enemies=10 natively, so 10v10 is their full size.
+
+MODIFIED (overwrite the nibi versions):
+  cc_smacv2_gpu.sh        GPU job script
+  cc_smacv2_gpu_runs.sh   launcher: our method, 3 maps x seeds 1-5 = 15 jobs
+
+DELIBERATELY EXCLUDED:
+  cc_reference_runs_extra.sh -- also modified in the Nibi tree, but unrelated to
+  10v10 (zerg s4 rerun) and owned by a different session. Do not carry it over
+  without checking.
+
+EDIT FOR THE NEW CLUSTER (hardcoded for Nibi in both .sh files):
+  repo path   /home/zwang182/MARL/marl_p3_smacv2
+  venv        /home/zwang182/pip_envs/epymarlEnv  + its module load lines
+  SC2PATH     /home/zwang182/MARL/sc2_410/StarCraftII   <-- SC2 4.10; win rates
+              are NOT comparable across SC2 versions
+  account     --account=def-dpmeger
+  GPU         --gpus=h100_3g.40gb:1                     <-- Nibi MIG name
+  resultsPath <repo>/results/MSEMM_10v10
+
+RUN SETTINGS baked into the launcher:
+  t_max=5005000  save_model_interval=800000  buffer_size=4000
+  use_tensorboard=True  save_model=True  --time=23:59:00  --mem=50G  8 cpus
+  terran MUST use hpn_saleq_terran_sem_wm_qmix (plain hpn_saleq asserts on terran_gen)
+
+SEED BOOKKEEPING: Nibi holds seeds 1-5 on all three maps (jobs 21391721-21391750,
+  submitted 2026-09-08, still PENDING as of 2026-09-11). Record which seeds the new
+  cluster takes in the launcher comment so nothing is double-run; keep names/seeds
+  identical so results merge by (name, map, seed).
